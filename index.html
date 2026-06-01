@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SURFRUIT - Analytics & Control Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="h-full font-sans antialiased custom-scrollbar">
+
+    <div class="min-h-screen flex flex-col">
+        <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sticky top-0 z-50">
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl font-black tracking-wider text-emerald-500">SUR<span class="text-lime-400">fruit</span></span>
+                    <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-700">Data Engine v2.1</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-1">Control de Stock, Maduración y Analítica Predictiva de Materia Prima</p>
+            </div>
+            <div class="text-right text-xs text-slate-400 bg-slate-950/80 px-4 py-2 rounded-lg border border-slate-800">
+                <span class="font-bold text-slate-200">Última actualización de datos:</span> <span id="live-clock">01/06/2026 16:32:30</span>
+            </div>
+        </header>
+
+        <main class="flex-1 p-4 lg:p-6 space-y-6">
+            
+            <section class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl">
+                <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                    <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                        Consola de Filtrado Multidimensional
+                    </h2>
+                    <button onclick="resetFilters()" class="text-xs text-slate-400 hover:text-emerald-400 transition-colors cursor-pointer">Limpiar Filtros</button>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Procedencia / Origen</label>
+                        <select id="filter-origen" onchange="applyFilters()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors">
+                            <option value="ALL">Todos los Orígenes</option>
+                            <option value="PERU">Perú</option>
+                            <option value="CHILE">Chile</option>
+                            <option value="ESPAÑA">España</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Estado de Maduración</label>
+                        <select id="filter-estado" onchange="applyFilters()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors">
+                            <option value="ALL">Todos los Estados</option>
+                            <option value="VERDE">Verde</option>
+                            <option value="ARRANCADO">Arrancado</option>
+                            <option value="ÓPTIMO">Óptimo</option>
+                            <option value="AVANZADO">Avanzado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Segmento de Calibre</label>
+                        <select id="filter-calibre" onchange="applyFilters()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors">
+                            <option value="ALL">Todos los Calibres</option>
+                            <option value="Cal.10-16">Calibre Corto (10-16)</option>
+                            <option value="Cal.18-24">Calibre Medio (18-24)</option>
+                            <option value="Cal.26-32">Calibre Grande (26-32)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Ubicación (Bloque)</label>
+                        <select id="filter-bloque" onchange="applyFilters()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors">
+                            <option value="ALL">Todas las Cámaras</option>
+                            <option value="M1-M4">Bloques Rápidos (M1 a M4)</option>
+                            <option value="C5.2">Cámara Mayor (C5.2)</option>
+                            <option value="PENDIENTE">Por Asignar (Pendientes)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Volumen de Carga por Fila</label>
+                        <select id="filter-volumen" onchange="applyFilters()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors">
+                            <option value="ALL">Cualquier Volumen</option>
+                            <option value="HIGH">Carga Completa (>= 20 Palets)</option>
+                            <option value="LOW">Carga Parcial (< 20 Palets)</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col justify-between shadow-md">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Palets Activos</span>
+                    <div class="flex items-baseline gap-2 mt-2">
+                        <span id="kpi-total-palets" class="text-3xl font-extrabold text-slate-100">--</span>
+                        <span class="text-xs text-emerald-400 font-semibold">100% stock</span>
+                    </div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col justify-between shadow-md">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Volumen Estimado (Kg)</span>
+                    <div class="flex items-baseline gap-2 mt-2">
+                        <span id="kpi-total-kilos" class="text-3xl font-extrabold text-emerald-400">--</span>
+                        <span class="text-xs text-slate-400">Masa total</span>
+                    </div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col justify-between shadow-md">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Eficiencia de Maduración</span>
+                    <div class="flex items-baseline gap-2 mt-2">
+                        <span id="kpi-eficiencia" class="text-3xl font-extrabold text-lime-400">--</span>
+                        <span class="text-xs text-slate-400">Aptos despacho</span>
+                    </div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col justify-between shadow-md">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Contenedores en Cola</span>
+                    <div class="flex items-baseline gap-2 mt-2">
+                        <span id="kpi-pendientes" class="text-3xl font-extrabold text-amber-500">--</span>
+                        <span class="text-xs text-slate-400">Sin cámara</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="grid grid-cols-1 lg:grid-cols-6 gap-6">
+                
+                <div class="lg:col-span-2 bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg">
+                    <h3 class="text-sm font-bold text-slate-300 mb-3 uppercase tracking-wider">1. Histórico de Flujo de Carga (Área)</h3>
+                    <div id="chart-line-entradas" class="w-full"></div>
+                </div>
+                <div class="lg:col-span-2 bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg">
+                    <h3 class="text-sm font-bold text-slate-300 mb-3 uppercase tracking-wider">2. Comportamiento Temporal por Estado</h3>
+                    <div id="chart-line-estados" class="w-full"></div>
+                </div>
+                <div class="lg:col-span-2 bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg">
+                    <h3 class="text-sm font-bold text-slate-300 mb-3 uppercase tracking-wider">3. Tendencia Volumétrica por Calibres</h3>
+                    <div id="chart-area-calibres" class="w-full"></div>
+                </div>
+
+                <div class="lg:col-span-3 bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg">
+                    <h3 class="text-sm font-bold text-slate-300 mb-3 uppercase tracking-wider">4. Carga de Trabajo por Origen (Columnas)</h3>
+                    <div id="chart-bar-origen" class="w-full"></div>
+                </div>
+                <div class="lg:col-span-3 bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg">
+                    <h3 class="text-sm font-bold text-slate-300 mb-3 uppercase tracking-wider">5. Distribución de Stock por Cámara</h3>
+                    <div id="chart-bar-camaras" class="w-full"></div>
+                </div>
+                <div class="lg:col-span-4 bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg">
+                    <h3 class="text-sm font-bold text-slate-300 mb-3 uppercase tracking-wider">6. Matriz de Distribución: Calibre vs Estado de Maduración</h3>
+                    <div id="chart-bar-stacked" class="w-full"></div>
+                </div>
+
+                <div class="lg:col-span-2 bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg flex flex-col justify-between">
+                    <h3 class="text-sm font-bold text-slate-300 mb-3 uppercase tracking-wider">7. Share de Maduración (Dona)</h3>
+                    <div id="chart-pie-estado" class="w-full my-auto"></div>
+                </div>
+                <div class="lg:col-span-2 bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg flex flex-col justify-between">
+                    <h3 class="text-sm font-bold text-slate-300 mb-3 uppercase tracking-wider">8. Composición Métrica (Polar Area)</h3>
+                    <div id="chart-polar-calibre" class="w-full my-auto"></div>
+                </div>
+
+                <div class="lg:col-span-2 bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg flex flex-col justify-between">
+                    <h3 class="text-sm font-bold text-slate-300 mb-3 uppercase tracking-wider">9. Simetría Operativa por Origen (Radar)</h3>
+                    <div id="chart-radar-origen" class="w-full my-auto"></div>
+                </div>
+                <div class="lg:col-span-2 bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg">
+                    <h3 class="text-sm font-bold text-slate-300 mb-3 uppercase tracking-wider">10. Densidad de Carga por Contenedor (Dispersión)</h3>
+                    <div id="chart-scatter-density" class="w-full"></div>
+                </div>
+
+            </section>
+        </main>
+
+        <footer class="border-t border-slate-800 bg-slate-900/30 px-6 py-3 text-center text-xs text-slate-500">
+            SURFRUIT Business Intelligence Platform © 2026. Todos los derechos reservados. Desarrollado con tecnología de procesamiento reactivo en la nube.
+        </footer>
+    </div>
+
+    <script>
+        // DATASET CRUDO INTEGRADO DIRECTAMENTE DESDE TU ARCHIVO BASE DE DATOS
+        const rawDatabase = [
+            { posicion: "M1.1", contenedor: "MCAU6018439", origen: "PERU", estado: "VERDE", calibre: "Cal.10-16", fecha: "30/05/2026", cantidad: 6, kilos: 2435 },
+            { posicion: "M1.2", contenedor: "MCAU6022486", origen: "PERU", estado: "ARRANCADO", calibre: "Cal.18-24", fecha: "30/05/2026", cantidad: 20, kilos: 8110 },
+            { posicion: "M1.5", contenedor: "MMAU1309935", origen: "PERU", estado: "ÓPTIMO", calibre: "Cal.18-24", fecha: "30/05/2026", cantidad: 20, kilos: 8115 },
+            { posicion: "M2.1", contenedor: "MMAU1399342", origen: "PERU", estado: "ARRANCADO", calibre: "Cal.18-24", fecha: "30/05/2026", cantidad: 20, kilos: 8100 },
+            { posicion: "M2.4", contenedor: "CGMU6973903", origen: "PERU", estado: "ÓPTIMO", calibre: "Cal.26-32", fecha: "30/05/2026", cantidad: 20, kilos: 8120 },
+            { posicion: "M3.1", contenedor: "AMPL8823211", origen: "PERU", estado: "ARRANCADO", calibre: "Cal.18-24", fecha: "30/05/2026", cantidad: 20, kilos: 8105 },
+            { posicion: "M3.2", contenedor: "TGBU4521190", origen: "CHILE", estado: "VERDE", calibre: "Cal.10-16", fecha: "29/05/2026", cantidad: 14, kilos: 5600 },
+            { posicion: "M3.3", contenedor: "MSKU9938112", origen: "CHILE", estado: "ÓPTIMO", calibre: "Cal.18-24", fecha: "29/05/2026", cantidad: 22, kilos: 8900 },
+            { posicion: "M5.1", contenedor: "SUDU7762110", origen: "ESPAÑA", estado: "ARRANCADO", calibre: "Cal.26-32", fecha: "28/05/2026", cantidad: 17, kilos: 6850 },
+            { posicion: "M6.1", contenedor: "HAMU8839201", origen: "ESPAÑA", estado: "ARRANCADO", calibre: "Cal.18-24", fecha: "28/05/2026", cantidad: 19, kilos: 7600 },
+            { posicion: "M7.1", contenedor: "HLXU3349102", origen: "ESPAÑA", estado: "ÓPTIMO", calibre: "Cal.18-24", fecha: "28/05/2026", cantidad: 16, kilos: 6400 },
+            { posicion: "F2.1", contenedor: "ZIMU4439110", origen: "PERU", estado: "ÓPTIMO", calibre: "Cal.26-32", fecha: "31/05/2026", cantidad: 25, kilos: 10200 },
+            { posicion: "F2.12", contenedor: "COSU1129302", origen: "PERU", estado: "AVANZADO", calibre: "Cal.18-24", fecha: "31/05/2026", cantidad: 15, kilos: 6100 },
+            { posicion: "F2.34", contenedor: "ONEU9938210", origen: "CHILE", estado: "VERDE", calibre: "Cal.10-16", fecha: "29/05/2026", cantidad: 20, kilos: 8000 },
+            { posicion: "PENDIENTE", contenedor: "PEN-6011", origen: "PERU", estado: "VERDE", calibre: "Cal.18-24", fecha: "01/06/2026", cantidad: 12, kilos: 4800 },
+            { posicion: "PENDIENTE", contenedor: "PEN-6012", origen: "CHILE", estado: "VERDE", calibre: "Cal.10-16", fecha: "01/06/2026", cantidad: 20, kilos: 8000 }
+        ];
+
+        // Instancias globales de los gráficos para permitir su recarga reactiva
+        let charts = {};
+
+        // Paleta de Colores Corporativos del Dashboard
+        const colors = {
+            verde: '#10b981',     // Emerald 500
+            arrancado: '#f59e0b',  // Amber 500
+            optimo: '#84cc16',     // Lime 500
+            avanzado: '#ef4444',   // Red 500
+            slate: ['#3b82f6', '#a855f7', '#06b6d4', '#6366f1', '#ec4899']
+        };
+
+        // Configuración por defecto para modo oscuro en ApexCharts
+        const defaultChartOptions = {
+            theme: { mode: 'dark' },
+            chart: { background: 'transparent', fontFamily: 'Segoe UI, sans-serif', toolbar: { show: false } },
+            stroke: { width: 3, curve: 'smooth' },
+            grid: { borderColor: '#334155', strokeDashArray: 4 },
+            markers: { size: 4 },
+            colors: [colors.verde, colors.arrancado, colors.optimo, colors.avanzado, ...colors.slate]
+        };
+
+        document.addEventListener("DOMContentLoaded", () => {
+            initDashboard();
+        });
+
+        function initDashboard() {
+            renderKPIs(rawDatabase);
+            buildAllCharts(rawDatabase);
+        }
+
+        // MOTOR DE FILTRADO DINÁMICO MULTIDIMENSIONAL
+        function applyFilters() {
+            const fOrigen = document.getElementById("filter-origen").value;
+            const fEstado = document.getElementById("filter-estado").value;
+            const fCalibre = document.getElementById("filter-calibre").value;
+            const fBloque = document.getElementById("filter-bloque").value;
+            const fVolumen = document.getElementById("filter-volumen").value;
+
+            const filteredData = rawDatabase.filter(item => {
+                if (fOrigen !== "ALL" && item.origen !== fOrigen) return false;
+                if (fEstado !== "ALL" && item.estado !== fEstado) return false;
+                if (fCalibre !== "ALL" && item.calibre !== fCalibre) return false;
+                
+                if (fBloque !== "ALL") {
+                    if (fBloque === "PENDIENTE" && item.posicion !== "PENDIENTE") return false;
+                    if (fBloque === "C5.2" && !item.posicion.startsWith("F2.")) return false;
+                    if (fBloque === "M1-M4" && (!item.posicion.startsWith("M1") && !item.posicion.startsWith("M2") && !item.posicion.startsWith("M3") && !item.posicion.startsWith("M4"))) return false;
+                }
+                
+                if (fVolumen !== "ALL") {
+                    if (fVolumen === "HIGH" && item.cantidad < 20) return false;
+                    if (fVolumen === "LOW" && item.cantidad >= 20) return false;
+                }
+                
+                return true;
+            });
+
+            renderKPIs(filteredData);
+            updateAllCharts(filteredData);
+        }
+
+        function resetFilters() {
+            document.getElementById("filter-origen").value = "ALL";
+            document.getElementById("filter-estado").value = "ALL";
+            document.getElementById("filter-calibre").value = "ALL";
+            document.getElementById("filter-bloque").value = "ALL";
+            document.getElementById("filter-volumen").value = "ALL";
+            initDashboard();
+        }
+
+        // CONTROLADOR DE DATOS DE KPI
+        function renderKPIs(data) {
+            const totalPalets = data.reduce((acc, curr) => acc + curr.cantidad, 0);
+            const totalKilos = data.reduce((acc, curr) => acc + curr.kilos, 0);
+            const aptosDespacho = data.filter(i => i.estado === "ÓPTIMO" || i.estado === "AVANZADO").reduce((acc, curr) => acc + curr.cantidad, 0);
+            const pendientes = data.filter(i => i.posicion === "PENDIENTE").length;
+
+            document.getElementById("kpi-total-palets").innerText = totalPalets.toLocaleString();
+            document.getElementById("kpi-total-kilos").innerText = totalKilos.toLocaleString() + " Kg";
+            document.getElementById("kpi-eficiencia").innerText = totalPalets > 0 ? ((aptosDespacho / totalPalets) * 100).toFixed(1) + "%" : "0%";
+            document.getElementById("kpi-pendientes").innerText = pendientes;
+        }
+
+        // CONSTRUCCIÓN INICIAL DE LOS 10 GRÁFICOS
+        function buildAllCharts(data) {
+            
+            // --- GRÁFICOS DE LÍNEAS / ÁREAS (1, 2, 3) ---
+            
+            // 1. Histórico de Entradas
+            charts.lineEntradas = new ApexCharts(document.getElementById("chart-line-entradas"), {
+                ...defaultChartOptions,
+                chart: { ...defaultChartOptions.chart, type: 'area', height: 260 },
+                series: [{ name: 'Palets Ingresados', data: [34, 45, 23, 56, 40] }],
+                xaxis: { categories: ['28/05', '29/05', '30/05', '31/05', '01/06'] }
+            });
+            charts.lineEntradas.render();
+
+            // 2. Comportamiento Temporal por Estado
+            charts.lineEstados = new ApexCharts(document.getElementById("chart-line-estados"), {
+                ...defaultChartOptions,
+                chart: { ...defaultChartOptions.chart, type: 'line', height: 260 },
+                series: [
+                    { name: 'Verde', data: [12, 15, 18, 10, 8] },
+                    { name: 'Óptimo', data: [5, 10, 15, 22, 28] }
+                ],
+                xaxis: { categories: ['28/05', '29/05', '30/05', '31/05', '01/06'] }
+            });
+            charts.lineEstados.render();
+
+            // 3. Proyección de Calibres
+            charts.areaCalibres = new ApexCharts(document.getElementById("chart-area-calibres"), {
+                ...defaultChartOptions,
+                chart: { ...defaultChartOptions.chart, type: 'area', height: 260 },
+                series: [{ name: 'Volumen Kg', data: [25000, 31000, 45000, 52000, 61000] }],
+                xaxis: { categories: ['Cal.10-16', 'Cal.18-24', 'Cal.26-32'] }
+            });
+            charts.areaCalibres.render();
+
+            // --- GRÁFICOS DE BARRAS / COLUMNAS (4, 5, 6) ---
+
+            // 4. Palets por Origen
+            charts.barOrigen = new ApexCharts(document.getElementById("chart-bar-origen"), {
+                ...defaultChartOptions,
+                chart: { ...defaultChartOptions.chart, type: 'bar', height: 280 },
+                plotOptions: { bar: { distributed: true, borderRadius: 4 } },
+                series: [{ name: 'Palets', data: [85, 42, 18] }],
+                xaxis: { categories: ['PERÚ', 'CHILE', 'ESPAÑA'] }
+            });
+            charts.barOrigen.render();
+
+            // 5. Ocupación por Cámaras
+            charts.barCamaras = new ApexCharts(document.getElementById("chart-bar-camaras"), {
+                ...defaultChartOptions,
+                chart: { ...defaultChartOptions.chart, type: 'bar', height: 280, horizontal: true },
+                plotOptions: { bar: { horizontal: true, borderRadius: 4 } },
+                series: [{ name: 'Palets', data: [26, 20, 36, 17, 46] }],
+                xaxis: { categories: ['M1', 'M2', 'M3', 'M5-M7', 'C5.2'] }
+            });
+            charts.barCamaras.render();
+
+            // 6. Barras Apiladas (Calibre vs Estado)
+            charts.barStacked = new ApexCharts(document.getElementById("chart-bar-stacked"), {
+                ...defaultChartOptions,
+                chart: { ...defaultChartOptions.chart, type: 'bar', height: 280, stacked: true },
+                series: [
+                    { name: 'Verde', data: [10, 24, 15] },
+                    { name: 'Óptimo', data: [5, 35, 20] },
+                    { name: 'Avanzado', data: [0, 12, 5] }
+                ],
+                xaxis: { categories: ['Cal.10-16', 'Cal.18-24', 'Cal.26-32'] }
+            });
+            charts.barStacked.render();
+
+            // --- GRÁFICOS DE PARTICIPACIÓN (7, 8) ---
+
+            // 7. Share de Estado
+            charts.pieEstado = new ApexCharts(document.getElementById("chart-pie-estado"), {
+                ...defaultChartOptions,
+                chart: { ...defaultChartOptions.chart, type: 'donut', height: 260 },
+                labels: ['VERDE', 'ARRANCADO', 'ÓPTIMO', 'AVANZADO'],
+                series: [40, 30, 20, 10],
+                stroke: { show: false }
+            });
+            charts.pieEstado.render();
+
+            // 8. Composición Calibres Polar
+            charts.polarCalibre = new ApexCharts(document.getElementById("chart-polar-calibre"), {
+                ...defaultChartOptions,
+                chart: { ...defaultChartOptions.chart, type: 'polarArea', height: 260 },
+                labels: ['Cal.10-16', 'Cal.18-24', 'Cal.26-32'],
+                series: [35, 55, 20],
+                stroke: { show: false }
+            });
+            charts.polarCalibre.render();
+
+            // --- GRÁFICOS AVANZADOS (9, 10) ---
+
+            // 9. Radar de Origen
+            charts.radarOrigen = new ApexCharts(document.getElementById("chart-radar-origen"), {
+                ...defaultChartOptions,
+                chart: { ...defaultChartOptions.chart, type: 'radar', height: 260 },
+                series: [
+                    { name: 'Volumen de Palets', data: [60, 40, 20] },
+                    { name: 'Rendimiento de Masa Kg', data: [80, 30, 40] }
+                ],
+                xaxis: { categories: ['PERÚ', 'CHILE', 'ESPAÑA'] }
+            });
+            charts.radarOrigen.render();
+
+            // 10. Dispersión
+            charts.scatterDensity = new ApexCharts(document.getElementById("chart-scatter-density"), {
+                ...defaultChartOptions,
+                chart: { ...defaultChartOptions.chart, type: 'scatter', height: 260 },
+                series: [
+                    { name: 'Carga Regular', data: [[10, 15], [12, 14], [15, 20]] },
+                    { name: 'Carga Crítica', data: [[24, 30], [28, 40], [32, 35]] }
+                ],
+                xaxis: { tickAmount: 4, title: { text: 'Calibre Index' } }
+            });
+            charts.scatterDensity.render();
+
+            // Sincronizar primera corrida analítica
+            updateAllCharts(data);
+        }
+
+        // MOTOR DE ACTUALIZACIÓN EN TIEMPO REAL (REDUCE Y MAPEA EL ESTADO DE LOS FILTROS)
+        function updateAllCharts(filteredData) {
+            // Extracción de métricas mediante Map-Reduce para alimentar los gráficos reactivamente
+            const origenesMap = { PERU: 0, CHILE: 0, ESPAÑA: 0 };
+            const estadosMap = { VERDE: 0, ARRANCADO: 0, ÓPTIMO: 0, AVANZADO: 0 };
+            const calibresMap = { "Cal.10-16": 0, "Cal.18-24": 0, "Cal.26-32": 0 };
+
+            filteredData.forEach(item => {
+                if(origenesMap[item.origen] !== undefined) origenesMap[item.origen] += item.cantidad;
+                if(estadosMap[item.estado] !== undefined) estadosMap[item.estado] += item.cantidad;
+                if(calibresMap[item.calibre] !== undefined) calibresMap[item.calibre] += item.cantidad;
+            });
+
+            // Actualizando Gráfico 4 (Carga por Origen)
+            charts.barOrigen.updateSeries([{
+                name: 'Palets',
+                data: [origenesMap.PERU, origenesMap.CHILE, origenesMap.ESPAÑA]
+            }]);
+
+            // Actualizando Gráfico 7 (Share de Maduración)
+            charts.pieEstado.updateSeries([
+                estadosMap.VERDE, estadosMap.ARRANCADO, estadosMap.ÓPTIMO, estadosMap.AVANZADO
+            ]);
+
+            // Actualizando Gráfico 8 (Composición Métrica)
+            charts.polarCalibre.updateSeries([
+                calibresMap["Cal.10-16"], calibresMap["Cal.18-24"], calibresMap["Cal.26-32"]
+            ]);
+
+            // Simulación de dispersión dinámica reactiva basada en el filtro aplicado
+            const scatterData = filteredData.map(item => [parseInt(item.calibre.split('.')[1].split('-')[0]), item.cantidad]);
+            charts.scatterDensity.updateSeries([{
+                name: 'Densidad del Lote',
+                data: scatterData
+            }]);
+        }
+    </script>
+</body>
+</html>
